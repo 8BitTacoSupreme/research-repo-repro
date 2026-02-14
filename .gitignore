@@ -1,0 +1,45 @@
+# Large generated data files (exceed GitHub 100MB limit)
+DNN_for_ADprediction/dataset/GPL13534-11288.txt
+DNN_for_ADprediction/dataset/GPL13534_manifest.csv.gz
+
+# Renamed data copies (regenerate with: cp allforDNN_ge_sample.tsv allforDNN_ge.txt)
+DNN_for_ADprediction/dataset/allforDNN_ge.txt
+DNN_for_ADprediction/dataset/allforDNN_me.txt
+
+# Pipeline output
+DNN_for_ADprediction/results/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# R
+.Rhistory
+.RData
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+
+# Root Flox environment (Claude Code working env, not part of project)
+/.flox/
+
+# Copyrighted paper PDF
+*.pdf
+
+# Agent config
+SKILLS.md
+
+# Flox cache
+DNN_for_ADprediction/.flox/run/
+DNN_for_ADprediction/.flox/cache/
+
+# Upstream git history (preserved for reference)
+DNN_for_ADprediction/.git-upstream/
+
+# Claude internal
+.claude/

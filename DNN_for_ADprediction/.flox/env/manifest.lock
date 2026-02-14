@@ -1,0 +1,808 @@
+{
+  "lockfile-version": 1,
+  "manifest": {
+    "version": 1,
+    "install": {
+      "R": {
+        "pkg-path": "R"
+      },
+      "bash": {
+        "pkg-path": "bash"
+      },
+      "coreutils": {
+        "pkg-path": "coreutils"
+      },
+      "curl": {
+        "pkg-path": "curl"
+      },
+      "gawk": {
+        "pkg-path": "gawk"
+      },
+      "gcc": {
+        "pkg-path": "gcc"
+      },
+      "gnumake": {
+        "pkg-path": "gnumake"
+      },
+      "gzip": {
+        "pkg-path": "gzip"
+      },
+      "pkg-config": {
+        "pkg-path": "pkg-config"
+      },
+      "python3": {
+        "pkg-path": "python36"
+      },
+      "zlib": {
+        "pkg-path": "zlib"
+      }
+    },
+    "vars": {
+      "BAYESOPT_VERSION": "1.0.1",
+      "MATPLOTLIB_VERSION": "3.0.3",
+      "NUMPY_VERSION": "1.16.3",
+      "PANDAS_VERSION": "0.24.2",
+      "SCIPY_VERSION": "1.2.1",
+      "SKLEARN_VERSION": "0.21.0",
+      "TF_VERSION": "1.4.1"
+    },
+    "hook": {
+      "on-activate": "  # --- Python virtual environment with pinned ML packages ---\n  if [ ! -d \"$FLOX_ENV_CACHE/venv\" ]; then\n    echo \"==> Creating Python 3.6 virtual environment...\"\n    python3 -m venv \"$FLOX_ENV_CACHE/venv\"\n    . \"$FLOX_ENV_CACHE/venv/bin/activate\"\n    pip install --upgrade \"pip==19.3.1\" \"setuptools==44.1.1\" \"wheel==0.33.6\"\n    echo \"==> Installing pinned Python packages...\"\n    pip install \"numpy==$NUMPY_VERSION\" \"scipy==$SCIPY_VERSION\" \"pandas==$PANDAS_VERSION\" \"scikit-learn==$SKLEARN_VERSION\" \"matplotlib==$MATPLOTLIB_VERSION\" \"bayesian-optimization==$BAYESOPT_VERSION\" \"tensorflow==$TF_VERSION\"\n  else\n    . \"$FLOX_ENV_CACHE/venv/bin/activate\"\n  fi\n\n  # --- R packages (CRAN + Bioconductor limma) ---\n  if [ ! -f \"$FLOX_ENV_CACHE/.r_packages_installed\" ]; then\n    echo \"==> Installing R packages (CRAN + Bioconductor)...\"\n    R_LIB_DIR=\"$FLOX_ENV_CACHE/R_libs\"\n    mkdir -p \"$R_LIB_DIR\"\n    Rscript -e \"\n      lib_dir <- Sys.getenv('FLOX_ENV_CACHE')\n      lib_dir <- paste0(lib_dir, '/R_libs')\n      .libPaths(c(lib_dir, .libPaths()))\n      install.packages(\n        c('openxlsx', 'data.table', 'ggplot2', 'pracma', 'dgof'),\n        repos = 'https://cloud.r-project.org',\n        lib = lib_dir\n      )\n      if (!requireNamespace('BiocManager', quietly = TRUE))\n        install.packages('BiocManager', repos = 'https://cloud.r-project.org', lib = lib_dir)\n      library(BiocManager, lib.loc = lib_dir)\n      BiocManager::install(version = '3.9', ask = FALSE)\n      BiocManager::install('limma', lib = lib_dir, update = FALSE, ask = FALSE)\n    \"\n    touch \"$FLOX_ENV_CACHE/.r_packages_installed\"\n    echo \"==> R packages installed.\"\n  fi\n  export R_LIBS_USER=\"$FLOX_ENV_CACHE/R_libs\"\n"
+    },
+    "profile": {
+      "common": "  echo \"Park et al. (2020) DNN for AD Prediction - Reproducibility Environment\"\n  echo \"Python: $(python3 --version 2>&1)\"\n  echo \"R: $(R --version 2>&1 | head -1)\"\n  echo \"\"\n  echo \"Pipeline steps (run from code/ subdirectories):\"\n  echo \"  1. cd 'code/01 data preprocessing' && python Split_Inputdata.py\"\n  echo \"  2. cd 'code/02 feature selection'   && Rscript '01 investigate_DEG_DMP.R'\"\n  echo \"  3. cd 'code/02 feature selection'   && python '02 Annotate_DMP.py'\"\n  echo \"  4. cd 'code/04 prediction'          && python AD_Prediction_ML.py\"\n  echo \"  5. cd 'code/04 prediction'          && python AD_Prediction_DNN.py\"\n"
+    },
+    "options": {
+      "systems": [
+        "aarch64-darwin",
+        "x86_64-linux"
+      ]
+    },
+    "containerize": {
+      "config": {
+        "working-dir": "/workspace"
+      }
+    }
+  },
+  "packages": [
+    {
+      "attr_path": "R",
+      "broken": false,
+      "derivation": "/nix/store/wg24l4xhjz1knlxdb9p1jw1i6b5vp50y-R-4.1.1.drv",
+      "description": "Free software environment for statistical computing and graphics",
+      "install_id": "R",
+      "license": "GPL-2.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "name": "R-4.1.1",
+      "pname": "R",
+      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "rev_count": 309388,
+      "rev_date": "2021-08-17T18:52:19Z",
+      "scrape_date": "2024-08-15T20:55:30Z",
+      "stabilities": [
+        "stable",
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "4.1.1",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/pv98d5rw3q0hhn7avjv76s80g8klzagk-R-4.1.1"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "R",
+      "broken": false,
+      "derivation": "/nix/store/sxnvy9yjngyzixi3623la8p7zgyjxcg7-R-4.1.1.drv",
+      "description": "Free software environment for statistical computing and graphics",
+      "install_id": "R",
+      "license": "GPL-2.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "name": "R-4.1.1",
+      "pname": "R",
+      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "rev_count": 309388,
+      "rev_date": "2021-08-17T18:52:19Z",
+      "scrape_date": "2024-08-15T20:55:30Z",
+      "stabilities": [
+        "stable",
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "4.1.1",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/cpj8rs0zyr4lh0bsw7sw041pg97cvyrs-R-4.1.1"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "bash",
+      "broken": false,
+      "derivation": "/nix/store/5j3b6dr32ax6jjd63y16d9f4difhkfr3-bash-4.4-p23.drv",
+      "description": "GNU Bourne-Again Shell, the de facto standard shell on Linux",
+      "install_id": "bash",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "name": "bash-4.4-p23",
+      "pname": "bash",
+      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "rev_count": 309388,
+      "rev_date": "2021-08-17T18:52:19Z",
+      "scrape_date": "2024-08-15T20:55:30Z",
+      "stabilities": [
+        "stable",
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "4.4-p23",
+      "outputs_to_install": [
+        "man",
+        "out"
+      ],
+      "outputs": {
+        "dev": "/nix/store/sbh1wmv6ypq2gsqs3f1wlifb6jhc5qc2-bash-4.4-p23-dev",
+        "doc": "/nix/store/z1pkh67mfhmnhk7h2n0fznwvp1w0w7sa-bash-4.4-p23-doc",
+        "info": "/nix/store/pg39vxh372b6q618p4fkg4zvkjpxliqd-bash-4.4-p23-info",
+        "man": "/nix/store/nkd3yc672009md3537hmglsy6zli7ffr-bash-4.4-p23-man",
+        "out": "/nix/store/9hcd04vppg0b3r0chmd6w13lbrnr7m6w-bash-4.4-p23"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "bash",
+      "broken": false,
+      "derivation": "/nix/store/gr85018kdi5vhyb6ds7sy6jlgkyp6qii-bash-4.4-p23.drv",
+      "description": "GNU Bourne-Again Shell, the de facto standard shell on Linux",
+      "install_id": "bash",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "name": "bash-4.4-p23",
+      "pname": "bash",
+      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "rev_count": 309388,
+      "rev_date": "2021-08-17T18:52:19Z",
+      "scrape_date": "2024-08-15T20:55:30Z",
+      "stabilities": [
+        "stable",
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "4.4-p23",
+      "outputs_to_install": [
+        "man",
+        "out"
+      ],
+      "outputs": {
+        "dev": "/nix/store/bd4ls7ghnb2jcw8sbinjxxbii443622v-bash-4.4-p23-dev",
+        "doc": "/nix/store/cjplczhpi1cqk7sfm2rd1kvz0s9sayzc-bash-4.4-p23-doc",
+        "info": "/nix/store/1ik9karcjv1529fqhxg2f791hwxzzmds-bash-4.4-p23-info",
+        "man": "/nix/store/1cgpnas1wsyx1cny8vpbgi019nk5ghzd-bash-4.4-p23-man",
+        "out": "/nix/store/can473ld4dc8izcjlm4i5daxsh1yl5d8-bash-4.4-p23"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "coreutils",
+      "broken": false,
+      "derivation": "/nix/store/p6071ipgyxzr016cfwc4bhqxcdvi4a1q-coreutils-8.32.drv",
+      "description": "The basic file, shell and text manipulation utilities of the GNU operating system",
+      "install_id": "coreutils",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "name": "coreutils-8.32",
+      "pname": "coreutils",
+      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "rev_count": 309388,
+      "rev_date": "2021-08-17T18:52:19Z",
+      "scrape_date": "2024-08-15T20:55:30Z",
+      "stabilities": [
+        "stable",
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "8.32",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "info": "/nix/store/7pca6fzj16j77wfnkqj4rw2qkwk44df0-coreutils-8.32-info",
+        "out": "/nix/store/6c5v0bn1393m27z1iir6r0wbh8zhmwb6-coreutils-8.32"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "coreutils",
+      "broken": false,
+      "derivation": "/nix/store/xwvwhf2530hc7rbpxiw8arp9kj6djncx-coreutils-8.32.drv",
+      "description": "The basic file, shell and text manipulation utilities of the GNU operating system",
+      "install_id": "coreutils",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "name": "coreutils-8.32",
+      "pname": "coreutils",
+      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "rev_count": 309388,
+      "rev_date": "2021-08-17T18:52:19Z",
+      "scrape_date": "2024-08-15T20:55:30Z",
+      "stabilities": [
+        "stable",
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "8.32",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "info": "/nix/store/jm7w6iikf2rsk2cvpqfb58sjx5l5gf9x-coreutils-8.32-info",
+        "out": "/nix/store/jj6z78skpdcya84iqbn9cf59sxjy5msv-coreutils-8.32"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "curl",
+      "broken": false,
+      "derivation": "/nix/store/i5k3hsci2q0xr51lp3gh7z8kbfhsdd6h-curl-7.76.1.drv",
+      "description": "A command line tool for transferring files with URL syntax",
+      "install_id": "curl",
+      "license": "curl",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "name": "curl-7.76.1",
+      "pname": "curl",
+      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "rev_count": 309388,
+      "rev_date": "2021-08-17T18:52:19Z",
+      "scrape_date": "2024-08-15T20:55:30Z",
+      "stabilities": [
+        "stable",
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "7.76.1",
+      "outputs_to_install": [
+        "bin",
+        "man"
+      ],
+      "outputs": {
+        "bin": "/nix/store/gf22zpzhc214r0nyy4sc4y8mqk4djfw0-curl-7.76.1-bin",
+        "dev": "/nix/store/829iy9qharl57p1scgbvsxhzvn0dafzl-curl-7.76.1-dev",
+        "devdoc": "/nix/store/xqfqbwjla8xbxzvmy06v2b3358hz8jyn-curl-7.76.1-devdoc",
+        "man": "/nix/store/8z77ghz3a2ryjflzyyp74cq94crslp9h-curl-7.76.1-man",
+        "out": "/nix/store/x3nxihzqiqng95vnhsmh2xkq1h7fqyrv-curl-7.76.1"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "curl",
+      "broken": false,
+      "derivation": "/nix/store/nz0rfrqrmij56r6h7y39lf789v4hhm9p-curl-7.76.1.drv",
+      "description": "A command line tool for transferring files with URL syntax",
+      "install_id": "curl",
+      "license": "curl",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "name": "curl-7.76.1",
+      "pname": "curl",
+      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "rev_count": 309388,
+      "rev_date": "2021-08-17T18:52:19Z",
+      "scrape_date": "2024-08-15T20:55:30Z",
+      "stabilities": [
+        "stable",
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "7.76.1",
+      "outputs_to_install": [
+        "bin",
+        "man"
+      ],
+      "outputs": {
+        "bin": "/nix/store/7vi5cjikjg329frsqsy9d01rdamby8fz-curl-7.76.1-bin",
+        "debug": "/nix/store/dimwi52mf8lz1056zy3armdj9srg88zz-curl-7.76.1-debug",
+        "dev": "/nix/store/4gvwasi82bxh4rhm30hcm8i0k9a19n1j-curl-7.76.1-dev",
+        "devdoc": "/nix/store/zzgyykbzm4p9agy4dk8kxaa0mn5dwpzk-curl-7.76.1-devdoc",
+        "man": "/nix/store/7bj3l4sb4am34z1n3c5rwkalqk8lkmxw-curl-7.76.1-man",
+        "out": "/nix/store/ydv5bnnh67zy7kidv127i9n0vvpvr4km-curl-7.76.1"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "gawk",
+      "broken": false,
+      "derivation": "/nix/store/xrhsy5v9q9bw7qbdqq3shsvr40ylj8dj-gawk-5.1.0.drv",
+      "description": "GNU implementation of the Awk programming language",
+      "install_id": "gawk",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "name": "gawk-5.1.0",
+      "pname": "gawk",
+      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "rev_count": 309388,
+      "rev_date": "2021-08-17T18:52:19Z",
+      "scrape_date": "2024-08-15T20:55:30Z",
+      "stabilities": [
+        "stable",
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "5.1.0",
+      "outputs_to_install": [
+        "man",
+        "out"
+      ],
+      "outputs": {
+        "info": "/nix/store/64p3ay7a49ha8ixij4sivf7za6lrm1ah-gawk-5.1.0-info",
+        "man": "/nix/store/kij626xh9mmyfcd92y9a6p3hn57f4h3a-gawk-5.1.0-man",
+        "out": "/nix/store/x0l5mp8bxm1zaszcr17lqq95578zdi20-gawk-5.1.0"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "gawk",
+      "broken": false,
+      "derivation": "/nix/store/n2zi265dzl84qdcbnr3vyfmlnpfydjmq-gawk-5.1.0.drv",
+      "description": "GNU implementation of the Awk programming language",
+      "install_id": "gawk",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "name": "gawk-5.1.0",
+      "pname": "gawk",
+      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "rev_count": 309388,
+      "rev_date": "2021-08-17T18:52:19Z",
+      "scrape_date": "2024-08-15T20:55:30Z",
+      "stabilities": [
+        "stable",
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "5.1.0",
+      "outputs_to_install": [
+        "man",
+        "out"
+      ],
+      "outputs": {
+        "info": "/nix/store/kzwc79mn7p2wn0h1d36myiljh914w6q3-gawk-5.1.0-info",
+        "man": "/nix/store/cxfpr6yqkq9x0pbraxkyqvam38rzk3l7-gawk-5.1.0-man",
+        "out": "/nix/store/1838raw4b33pbry9m3c4mwrfigzbkf6r-gawk-5.1.0"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "gcc",
+      "broken": false,
+      "derivation": "/nix/store/rl9cg4zwj1zj63wiab69dqlsdwgkvmwd-gcc-wrapper-11.1.0.drv",
+      "description": "GNU Compiler Collection, version 11.1.0 (wrapper script)",
+      "install_id": "gcc",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "name": "gcc-wrapper-11.1.0",
+      "pname": "gcc",
+      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "rev_count": 309388,
+      "rev_date": "2021-08-17T18:52:19Z",
+      "scrape_date": "2024-08-15T20:55:30Z",
+      "stabilities": [
+        "stable",
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "11.1.0",
+      "outputs_to_install": [
+        "man",
+        "out"
+      ],
+      "outputs": {
+        "info": "/nix/store/12q381yq7bznv3yxgdlbah0f14nq71wf-gcc-wrapper-11.1.0-info",
+        "man": "/nix/store/k4i1sm91l87wjgv7j5gmni9xh3n75vha-gcc-wrapper-11.1.0-man",
+        "out": "/nix/store/axxw0vlsg3mappcr48acqsnz05lvlh9d-gcc-wrapper-11.1.0"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "gcc",
+      "broken": false,
+      "derivation": "/nix/store/l4jq59fyc1biisss55wlm9mjaqlj99bk-gcc-wrapper-10.3.0.drv",
+      "description": "GNU Compiler Collection, version 10.3.0 (wrapper script)",
+      "install_id": "gcc",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "name": "gcc-wrapper-10.3.0",
+      "pname": "gcc",
+      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "rev_count": 309388,
+      "rev_date": "2021-08-17T18:52:19Z",
+      "scrape_date": "2024-08-15T20:55:30Z",
+      "stabilities": [
+        "stable",
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "10.3.0",
+      "outputs_to_install": [
+        "man",
+        "out"
+      ],
+      "outputs": {
+        "info": "/nix/store/8dl32n81gvzsjnbklcp4ma0a48a67wbv-gcc-wrapper-10.3.0-info",
+        "man": "/nix/store/81znbs9gvx21hly2fwr7h7dzr0j9qx3g-gcc-wrapper-10.3.0-man",
+        "out": "/nix/store/qvv5y4fx4x879rbsbs4g27mypl9wxbb9-gcc-wrapper-10.3.0"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "gnumake",
+      "broken": false,
+      "derivation": "/nix/store/k7znz3f54hzgxr5mg7v6lyc2k2imb31r-gnumake-4.3.drv",
+      "description": "A tool to control the generation of non-source files from sources",
+      "install_id": "gnumake",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "name": "gnumake-4.3",
+      "pname": "gnumake",
+      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "rev_count": 309388,
+      "rev_date": "2021-08-17T18:52:19Z",
+      "scrape_date": "2024-08-15T20:55:30Z",
+      "stabilities": [
+        "stable",
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "4.3",
+      "outputs_to_install": [
+        "man",
+        "out"
+      ],
+      "outputs": {
+        "info": "/nix/store/9hj4gac6cv4p3zr72q093iwb8lih6f25-gnumake-4.3-info",
+        "man": "/nix/store/14xpazq3cvm5x6pgias0yvk4l9z9lpqx-gnumake-4.3-man",
+        "out": "/nix/store/2z0ngazg3pcp6rhfcfjx2hlr89anxmq6-gnumake-4.3"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "gnumake",
+      "broken": false,
+      "derivation": "/nix/store/vzkv845x90pnikcapxjcy9mmrsl133yg-gnumake-4.3.drv",
+      "description": "A tool to control the generation of non-source files from sources",
+      "install_id": "gnumake",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "name": "gnumake-4.3",
+      "pname": "gnumake",
+      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "rev_count": 309388,
+      "rev_date": "2021-08-17T18:52:19Z",
+      "scrape_date": "2024-08-15T20:55:30Z",
+      "stabilities": [
+        "stable",
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "4.3",
+      "outputs_to_install": [
+        "man",
+        "out"
+      ],
+      "outputs": {
+        "info": "/nix/store/6njficwb3y5bdh5ina0wk44bp4g6x0l9-gnumake-4.3-info",
+        "man": "/nix/store/i685bj4nmb914567701hdxmmzp3cjflz-gnumake-4.3-man",
+        "out": "/nix/store/pyv3351wlsa5r8sa8bbjpici3ksbvcqc-gnumake-4.3"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "gzip",
+      "broken": false,
+      "derivation": "/nix/store/r3n8fhyv42385szn54p5pzh7paihn3jp-gzip-1.10.drv",
+      "description": "GNU zip compression program",
+      "install_id": "gzip",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "name": "gzip-1.10",
+      "pname": "gzip",
+      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "rev_count": 309388,
+      "rev_date": "2021-08-17T18:52:19Z",
+      "scrape_date": "2024-08-15T20:55:30Z",
+      "stabilities": [
+        "stable",
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "1.10",
+      "outputs_to_install": [
+        "man",
+        "out"
+      ],
+      "outputs": {
+        "info": "/nix/store/l4hrqip6naap2ypidk57xllc7y2rb15x-gzip-1.10-info",
+        "man": "/nix/store/60rc4h89w8b4sbl1dy7cr85mdq8dspcm-gzip-1.10-man",
+        "out": "/nix/store/ssssi7csxmh0crv44y38mp4ikf58m1h0-gzip-1.10"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "gzip",
+      "broken": false,
+      "derivation": "/nix/store/608x6l8z3hybpfhv8zq299gsf0hnjid5-gzip-1.10.drv",
+      "description": "GNU zip compression program",
+      "install_id": "gzip",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "name": "gzip-1.10",
+      "pname": "gzip",
+      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "rev_count": 309388,
+      "rev_date": "2021-08-17T18:52:19Z",
+      "scrape_date": "2024-08-15T20:55:30Z",
+      "stabilities": [
+        "stable",
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "1.10",
+      "outputs_to_install": [
+        "man",
+        "out"
+      ],
+      "outputs": {
+        "info": "/nix/store/884zn0mvd7palhi5sicc5zavag6phsi5-gzip-1.10-info",
+        "man": "/nix/store/7ncv2ml88j5chspbj3zwx7m61pa5c857-gzip-1.10-man",
+        "out": "/nix/store/zab716kfmd0h8iy49dldm8x1b695p7sk-gzip-1.10"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "pkg-config",
+      "broken": false,
+      "derivation": "/nix/store/bxhc27srj21a90si530wnzf3m3lr1sxs-pkg-config-wrapper-0.29.2.drv",
+      "description": "A tool that allows packages to find out information about other packages (wrapper script)",
+      "install_id": "pkg-config",
+      "license": "GPL-2.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "name": "pkg-config-wrapper-0.29.2",
+      "pname": "pkg-config",
+      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "rev_count": 309388,
+      "rev_date": "2021-08-17T18:52:19Z",
+      "scrape_date": "2024-08-15T20:55:30Z",
+      "stabilities": [
+        "stable",
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "0.29.2",
+      "outputs_to_install": [
+        "man",
+        "out"
+      ],
+      "outputs": {
+        "doc": "/nix/store/sn5p6whf9dh4hy401wb4ask3zkfk2v3c-pkg-config-wrapper-0.29.2-doc",
+        "man": "/nix/store/87kj97qrgs2g4aaxb761vpknsa91sn87-pkg-config-wrapper-0.29.2-man",
+        "out": "/nix/store/ffggv1jjsmwz2fr7v96b0anycz6zc5ls-pkg-config-wrapper-0.29.2"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "pkg-config",
+      "broken": false,
+      "derivation": "/nix/store/wcpdrdgl5ns8dbqx04p1ag6zmn5g1c1r-pkg-config-wrapper-0.29.2.drv",
+      "description": "A tool that allows packages to find out information about other packages (wrapper script)",
+      "install_id": "pkg-config",
+      "license": "GPL-2.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "name": "pkg-config-wrapper-0.29.2",
+      "pname": "pkg-config",
+      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "rev_count": 309388,
+      "rev_date": "2021-08-17T18:52:19Z",
+      "scrape_date": "2024-08-15T20:55:30Z",
+      "stabilities": [
+        "stable",
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "0.29.2",
+      "outputs_to_install": [
+        "man",
+        "out"
+      ],
+      "outputs": {
+        "doc": "/nix/store/07c8l31fsrvkh96dg100glnyp1lj3kly-pkg-config-wrapper-0.29.2-doc",
+        "man": "/nix/store/47d9d78rk8y6cwnb30ffp9bqa1xs22vr-pkg-config-wrapper-0.29.2-man",
+        "out": "/nix/store/3d8z7x0p3fzhjkxdfr3cg6vfkfmqadnd-pkg-config-wrapper-0.29.2"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "python36",
+      "broken": false,
+      "derivation": "/nix/store/g9n8ipz4pxxj9vdhkpls5l5jlgfx53cg-python3-3.6.14.drv",
+      "description": "A high-level dynamically-typed programming language",
+      "install_id": "python3",
+      "license": "Python-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "name": "python3-3.6.14",
+      "pname": "python36",
+      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "rev_count": 309388,
+      "rev_date": "2021-08-17T18:52:19Z",
+      "scrape_date": "2024-08-15T20:55:30Z",
+      "stabilities": [
+        "stable",
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "python3-3.6.14",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/3jgxx382zigk44yv0qzncq8gxkwxnqbn-python3-3.6.14"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "python36",
+      "broken": false,
+      "derivation": "/nix/store/ldfkzjw745f1ch0z0ib0zby4xq8d8m2q-python3-3.6.14.drv",
+      "description": "A high-level dynamically-typed programming language",
+      "install_id": "python3",
+      "license": "Python-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "name": "python3-3.6.14",
+      "pname": "python36",
+      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "rev_count": 309388,
+      "rev_date": "2021-08-17T18:52:19Z",
+      "scrape_date": "2024-08-15T20:55:30Z",
+      "stabilities": [
+        "stable",
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "python3-3.6.14",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/0cbaz5ficzinmv7sz2vh6r28vqdwjqam-python3-3.6.14"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "zlib",
+      "broken": false,
+      "derivation": "/nix/store/823g0fgdnj4r4zn0vss5nzfv78b7pg1c-zlib-1.2.11.drv",
+      "description": "Lossless data-compression library",
+      "install_id": "zlib",
+      "license": "Zlib",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "name": "zlib-1.2.11",
+      "pname": "zlib",
+      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "rev_count": 309388,
+      "rev_date": "2021-08-17T18:52:19Z",
+      "scrape_date": "2024-08-15T20:55:30Z",
+      "stabilities": [
+        "stable",
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "1.2.11",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "dev": "/nix/store/4ss22n20fqlvl9zgjc432ycnhb71fm6s-zlib-1.2.11-dev",
+        "out": "/nix/store/0c74phqyy9hca1waingl91wl89hcx477-zlib-1.2.11",
+        "static": "/nix/store/4msvk40k108z3zj5cwg7vgim1a4fh7ya-zlib-1.2.11-static"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "zlib",
+      "broken": false,
+      "derivation": "/nix/store/6af717ir6518qinqv2nb913i0sm13wwl-zlib-1.2.11.drv",
+      "description": "Lossless data-compression library",
+      "install_id": "zlib",
+      "license": "Zlib",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "name": "zlib-1.2.11",
+      "pname": "zlib",
+      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
+      "rev_count": 309388,
+      "rev_date": "2021-08-17T18:52:19Z",
+      "scrape_date": "2024-08-15T20:55:30Z",
+      "stabilities": [
+        "stable",
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "1.2.11",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "dev": "/nix/store/mzpfnpbax7i5b8ipsgf27i7nlmnhpvn3-zlib-1.2.11-dev",
+        "out": "/nix/store/9xnwvyzm8x3d7kk3lsvy9wyjdf684x5w-zlib-1.2.11",
+        "static": "/nix/store/blf4xb508qjnqpwp6bbpslvwh8vmwik5-zlib-1.2.11-static"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    }
+  ]
+}

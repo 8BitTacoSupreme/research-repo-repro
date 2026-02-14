@@ -1,0 +1,8 @@
+dataset/
+results/
+.git/
+*.tsv
+*.txt
+*.gz
+__pycache__/
+.Rhistory
