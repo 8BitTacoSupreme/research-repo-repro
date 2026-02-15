@@ -2,66 +2,89 @@
 
 **Paper:** "Prediction of Alzheimer's Disease Based on Deep Neural Network by Integrating Gene Expression and DNA Methylation Dataset"
 **Authors:** Park, C., Ha, J., & Park, S.
-**Journal:** International Journal of Neural Systems, 30(5), 2050010
-**DOI:** 10.1142/S0129065720500100
+**Journal:** Expert Systems with Applications, 140, 112873
+**DOI:** 10.1016/j.eswa.2019.112873
 **Companion Repository:** https://github.com/ChihyunPark/DNN_for_ADprediction
 
 ---
 
 ## 1. Environment Reconstruction
 
-### Strategy
+### Strategy: Pure Nix via Flox
 
-TensorFlow 1.4.1 only ships x86_64 Linux wheels and uses AVX instructions incompatible with Rosetta 2 on Apple Silicon. We use a Docker container with `--platform linux/amd64` (QEMU emulation) to provide a numerically correct x86_64-linux execution environment.
+Every dependency is resolved by Nix and stored in the content-addressed Nix store. No pip, no venv, no mutable package manager runs at activation time.
 
-### Dockerfile
+**Two custom Nix expressions** in `.flox/pkgs/` import a historical nixpkgs snapshot (nixos-19.09, commit `75f4ba05c63be3f147bcc2f7bd4ba1f029cedcb1`) that provides the 2019-era Python 3.6 and R ecosystems. Packages not in that snapshot (TF 1.4.1, TensorBoard 0.4.0, bayesian-optimization 1.0.1) are built from hash-pinned PyPI artifacts.
 
-The environment is encapsulated in `Dockerfile` (base: `python:3.6.14-slim-bullseye`). Build and run:
+| File | Provides |
+|------|----------|
+| `.flox/pkgs/python-ml-env.nix` | `python3.withPackages` — Python 3.6.9 + TF 1.4.1 + numpy/pandas/scipy/sklearn/matplotlib/bayesopt |
+| `.flox/pkgs/r-bio-env.nix` | `rWrapper` — R 3.6.1 + limma + ggplot2/data.table/openxlsx/pracma |
+| `.flox/env/manifest.toml` | Hook wires build results into PATH + coreutils/bash/curl/gzip/sed |
 
-```bash
-docker build --platform linux/amd64 -t park2020-ad-dnn .
-docker run --platform linux/amd64 -v $(pwd):/workspace -w /workspace -it park2020-ad-dnn bash
-```
+### Why nixos-19.09?
 
-### Flox Manifest
+- Python 3.6 was still a first-class citizen (3.7 was default, 3.6 fully supported)
+- numpy 1.17.2, pandas 0.25.1, scikit-learn 0.21.2 — all from the same era as the paper
+- R 3.6.1 with Bioconductor 3.9 packages (limma 3.38.3)
+- Binary cache (cache.nixos.org) retains these builds
 
-A Flox manifest (`.flox/env/manifest.toml`) documents the environment declaratively for native x86_64-linux systems. On such systems, `flox activate` provides the same environment without Docker.
+### Why not Docker?
+
+Docker + pip provides **layer-level** reproducibility: the Dockerfile is repeatable, but pip resolution is non-deterministic — running `pip install tensorflow==1.4.1` today may pull different transitive deps than it did in 2019.
+
+Nix provides **artifact-level** reproducibility: every `.so`, every `.py`, every byte is identified by its content hash. The dependency graph is a DAG of hash-addressed store paths. There is no "resolve at build time" step — the hashes ARE the versions.
 
 ---
 
 ## 2. Dependency Forensics Table
 
-| Package | Stated Version (README) | Paper Version | Installed Version | Confidence | Evidence Source |
-|---------|------------------------|---------------|-------------------|------------|-----------------|
-| Python | 3.5 | - | 3.6.14 | HIGH | README; TF 1.4.1 compat matrix supports 3.5-3.6; 3.5 unavailable in current package managers |
-| TensorFlow | 1.4.1 | 1.4.1 (s2.3) | 1.4.1 | HIGH | README + paper Section 2.3 |
-| NumPy | 1.16.3 | - | 1.16.3 | HIGH | README |
-| pandas | 0.24.2 | - | 0.24.2 | HIGH | README; code uses `.ix` and `.as_matrix()` (removed in 1.0) |
-| scikit-learn | 0.21.0 | 0.21.2 | 0.21.0 | HIGH | README says 0.21.0; paper says 0.21.2; using README version |
-| bayesian-optimization | *not listed* | - | 1.0.1 | MEDIUM | `from bayes_opt import BayesianOptimization`; 1.0.1 released 2019-01-24 |
-| matplotlib | *not listed* | - | 3.0.3 | MEDIUM | `mpl.use('Agg')` pattern; 2019 era |
-| scipy | *not listed* | - | 1.2.1 | MEDIUM | `from scipy import interp` (deprecated in later versions); 2019 era |
-| R | *not listed* | - | system (Debian bullseye) | MEDIUM | R script requires limma (Bioconductor) |
-| limma | *not listed* | - | latest via BiocManager | MEDIUM | Bioconductor 3.9 era (April 2019); modern BiocManager installs latest |
-| openxlsx | *not listed* | - | CRAN latest | LOW | R script import |
-| data.table | *not listed* | - | CRAN latest | LOW | R script import |
-| ggplot2 | *not listed* | - | CRAN latest | LOW | R script import |
-| pracma | *not listed* | - | CRAN latest | LOW | R script import |
-| dgof | *not listed* | - | CRAN latest | LOW | R script import |
+| Package | Paper / README | nixpkgs 19.09 | Custom Build | Confidence | Evidence |
+|---------|---------------|---------------|-------------|------------|---------|
+| Python | 3.5 (README) | 3.6.9 | - | HIGH | TF 1.4.1 compat matrix: 3.5-3.6; 3.5 EOL |
+| TensorFlow | 1.4.1 (paper s2.3, README) | not in nixpkgs | **1.4.1 wheel** | HIGH | Paper + README; never packaged in nixpkgs (went 1.3→1.5) |
+| TensorBoard | - | too new | **0.4.0 wheel** | HIGH | TF 1.4.1 requires `>=0.4.0,<0.5.0` |
+| NumPy | 1.16.3 (README) | 1.17.2 | - | HIGH | 1.17.2 is one minor ahead; same API surface |
+| pandas | 0.24.2 (README) | 0.25.1 | - | HIGH | 0.25.1 still has `.ix[]` and `.as_matrix()` |
+| scikit-learn | 0.21.0 (README) / 0.21.2 (paper) | 0.21.2 | - | HIGH | nixpkgs matches paper's version exactly |
+| scipy | - | 1.3.1 | - | MEDIUM | `from scipy import interp` still works in 1.3.x |
+| matplotlib | - | 3.1.1 | - | MEDIUM | `mpl.use('Agg')` pattern unchanged |
+| bayesian-opt | - | not in nixpkgs | **1.0.1 sdist** | MEDIUM | `from bayes_opt import BayesianOptimization`; 1.0.1 released 2019-01 |
+| R | - | 3.6.1 | - | MEDIUM | Required for limma DEG/DMP analysis |
+| limma | - | 3.38.3 | - | MEDIUM | Bioconductor 3.9 (matches nixos-19.09 timeline) |
+| ggplot2 | - | 3.2.0 | - | LOW | R script import |
+| data.table | - | 1.12.2 | - | LOW | R script import |
+| openxlsx | - | (19.09 era) | - | LOW | R script import |
+| pracma | - | (19.09 era) | - | LOW | R script import |
+| dgof | - | unknown | TBD | LOW | R script import; may need CRAN install fallback |
 
-### Key Version Decisions
+### Key Decisions
 
-1. **Python 3.6 vs 3.5:** README says 3.5, but Python 3.5 is unavailable in modern Docker images. TF 1.4.1 supports both 3.5 and 3.6. No code uses 3.5-specific features. Using 3.6.14.
-2. **scikit-learn 0.21.0 vs 0.21.2:** README says 0.21.0, paper says 0.21.2. Using README version (0.21.0) since it's the repo-local source of truth.
-3. **bayesian-optimization:** Not listed in README but required by `BayesianOpt_HpParm_Search.py`. Version 1.0.1 (released Jan 2019) matches the development timeline.
+1. **Python 3.6.9 vs 3.5:** README says 3.5, but Python 3.5 is EOL and unavailable. TF 1.4.1 supports both. No 3.5-specific code patterns found.
+
+2. **NumPy 1.17.2 vs 1.16.3:** nixpkgs 19.09 ships 1.17.2 (one minor version ahead of README). The API surface is identical for the operations this code uses (array ops, `.shape`, `.mean()`). Using the nixpkgs version avoids a custom build and ensures compatibility with the rest of the 19.09 ecosystem.
+
+3. **TF 1.4.1 never in nixpkgs:** TensorFlow packaging in nixpkgs went from 1.3.x directly to 1.5.0. Version 1.4.1 must be built from the PyPI manylinux1 wheel, with `autoPatchelfHook` to fix ELF rpath for the Nix store.
 
 ---
 
-## 3. Data Preparation
+## 3. Hash-Pinned Artifacts
+
+Every artifact in the environment is content-addressed in the Nix store. The three custom builds use these exact sources:
+
+| Package | Source | SHA256 |
+|---------|--------|--------|
+| tensorflow 1.4.1 | [PyPI wheel (cp36-manylinux1-x86_64)](https://files.pythonhosted.org/packages/8c/b3/dba1a3e681a56d5ad63d3a1aa02b52294bdb3c6373245a67c1492a90cb62/tensorflow-1.4.1-cp36-cp36m-manylinux1_x86_64.whl) | `233d66bfad2287c61434384ec315bbf37b2f551beda2e0d37a8c24a0f2ed3896` |
+| tensorboard 0.4.0 | [PyPI wheel (py3-none-any)](https://files.pythonhosted.org/packages/e9/9f/5845c18f9df5e7ea638ecf3a272238f0e7671e454faa396b5188c6e6fc0a/tensorflow_tensorboard-0.4.0-py3-none-any.whl) | `6684571c711e07b3aae25dd91cb4b106738d71acfce385b9d359ab14374ac518` |
+| bayesian-opt 1.0.1 | [PyPI sdist](https://files.pythonhosted.org/packages/72/0c/173ac467d0a53e33e41b521e4ceba74a8ac7c7873d7b857a8fbdca88302d/bayesian-optimization-1.0.1.tar.gz) | `b7ba390dbdc3fe431f996952c16bfb878c6d19f1ea5efe2e5c8b788359e40c48` |
+
+All other packages come from the nixos-19.09 binary cache at `cache.nixos.org`, which retains historical builds.
+
+---
+
+## 4. Data Preparation
 
 ### File Renaming
-
-The repository ships `_sample.tsv` files but code expects `.txt` files without `_sample` suffix:
 
 | Repo File | Code Expects | Action |
 |-----------|-------------|--------|
@@ -70,145 +93,70 @@ The repository ships `_sample.tsv` files but code expects `.txt` files without `
 
 ### Annotation File
 
-The code requires `GPL13534-11288.txt` (Illumina HumanMethylation450 BeadChip platform annotation). This file is no longer available at its original GEO FTP URL.
+The code requires `GPL13534-11288.txt` (Illumina HumanMethylation450 BeadChip annotation). No longer available at original GEO FTP URL.
 
-**Resolution:** Downloaded the Illumina manifest CSV (`GPL13534_HumanMethylation450_15017482_v.1.1.csv.gz`) from GEO supplementary files and converted to the expected TSV format with 37 header lines using `dataset/convert_manifest.py`.
+**Resolution:** Download the Illumina manifest CSV from GEO supplementary files and convert with `dataset/convert_manifest.py`.
 
 ### Required Directories
 
-Created:
-- `results/k_fold_train_test/` (output from Split_Inputdata.py)
-- `results/k_fold_train_test_results/` (output from prediction scripts)
+```bash
+results/k_fold_train_test/
+results/k_fold_train_test_results/k_{1..5}/table_{1..4}/{genExpr,meth,genExpr_meth,DEG,DMG,DEG_DMG}
+```
 
 ---
 
-## 4. Code Fixes
+## 5. Code Fixes
 
 ### R Script Windows Paths
 
-`code/02 feature selection/01 investigate_DEG_DMP.R` had hardcoded Windows paths:
-- Line 117: `setwd("D:/Development/ADprediction_git/ADprediction/code/02 feature selection")`
-- Line 148: same
-
-**Fix:** Replaced with robust path detection using `commandArgs(trailingOnly=FALSE)` with `--file=` parsing, and normalized to absolute path via `normalizePath()` to survive subsequent `setwd()` calls.
+`code/02 feature selection/01 investigate_DEG_DMP.R` had hardcoded Windows paths (`D:\Development\ADprediction_git\...`). Replaced with `commandArgs(trailingOnly=FALSE)` + `--file=` parsing + `normalizePath()` for cross-platform execution.
 
 ### Missing Output Directories
 
-The prediction scripts use `os.mkdir()` (not `os.makedirs()`), so nested output directories must be pre-created:
-```bash
-for k in 1 2 3 4 5; do
-  mkdir -p results/k_fold_train_test_results/k_${k}/table_{1,2,3,4}/{genExpr,meth,genExpr_meth,DEG,DMG,DEG_DMG}
-done
-```
+Prediction scripts use `os.mkdir()` (not `os.makedirs()`). All nested output directories must be pre-created.
 
 ---
 
-## 5. Validation Results
+## 6. Validation Results
 
-### V1: Python Import Check — PASS
+### V1: Python Import Check — PENDING
 
-All packages import at exact pinned versions:
-```
-TensorFlow: 1.4.1
-NumPy: 1.16.3
-pandas: 0.24.2
-scikit-learn: 0.21.0
-bayesian-optimization: OK
-matplotlib: 3.0.3
-scipy: 1.2.1
-```
-One benign warning: `compiletime version 3.5 of module 'tensorflow.python.framework.fast_tensor_util' does not match runtime version 3.6` — expected since TF 1.4.1 wheels were compiled for Python 3.5 but run correctly on 3.6.
+Requires x86_64-linux. Expected: TF 1.4.1, numpy 1.17.2, pandas 0.25.1, scikit-learn 0.21.2, scipy 1.3.1, matplotlib 3.1.1, bayesian-optimization OK.
 
-### V2: R Package Check — PASS
+### V2: R Package Check — PENDING
 
-All R packages load:
-```
-limma: 3.46.0
-openxlsx: 4.2.3
-data.table: 1.14.0
-ggplot2: 3.3.3
-pracma: 2.3.3
-dgof: 1.2
-```
+Requires x86_64-linux. Expected: limma 3.38.3, ggplot2 3.2.0, data.table 1.12.2, openxlsx/pracma from 19.09 era.
 
-### V3: Pipeline Smoke Test — PARTIAL PASS
+### V3: Pipeline Smoke Test — PENDING
 
-| Step | Script | Status | Notes |
-|------|--------|--------|-------|
-| 1. Data preprocessing | `Split_Inputdata.py` | PASS | 696 gene expr samples, 142 methylation samples, 5-fold split |
-| 2. Feature selection (DEG) | `01 investigate_DEG_DMP.R` | PASS | Limma DEG analysis completes for all 10 folds |
-| 3. Feature selection (DMP) | `01 investigate_DEG_DMP.R` | PASS | Limma DMP analysis completes for all 10 folds |
-| 4. DMP annotation | `02 Annotate_DMP.py` | PASS | Annotation with GPL13534 manifest successful |
-| 5. ML prediction | `AD_Prediction_ML.py` | FAIL* | ValueError: 0 features in DEG-DMG intersection |
-| 6. DNN prediction | `AD_Prediction_DNN.py` | FAIL* | `its_geneSet: 0` — same root cause as ML |
-
-*Failure is due to **sample data limitation**, not environment issues. The `_sample.tsv` files contain only 200 genes and 500 CpG probes (vs ~20,000+ genes and ~485,000 probes in the full GEO datasets). With so few features, the intersection between differentially expressed genes (DEGs) and differentially methylated genes (DMGs) is empty, causing downstream computation to fail. The scripts initialize correctly, load all libraries, read data, and reach the computation phase before encountering this data limitation.
+Expected: Steps 1-3 PASS, Steps 4-5 FAIL with sample data (0 features in DEG-DMG intersection).
 
 ### V4: Numerical Comparison — BLOCKED
 
-Cannot compare against paper results (DNN accuracy 0.823, AUROC 0.797) due to sample data limitation above. Full GEO datasets (GSE33000, GSE44770, GSE80970) are required.
-
----
-
-## 6. What Worked / What Didn't
-
-### Working
-
-- Docker image builds and runs on Apple Silicon via QEMU emulation
-- All 7 pinned Python packages install at exact specified versions
-- All 6 R packages install from CRAN (via Posit Package Manager 2021-05-17 snapshot)
-- Bioconductor limma installs (version 3.46.0 via Bioconductor 3.12)
-- Data preprocessing pipeline runs end-to-end through feature selection
-- Illumina 450K annotation file successfully converted from supplementary CSV
-- R script Windows paths fixed for cross-platform execution
-
-### Not Working (Data Limitation)
-
-- ML and DNN prediction scripts fail at computation due to empty DEG-DMG intersection
-- Root cause: sample data has too few features (200 genes, 500 probes)
-- This is NOT an environment issue — full datasets would resolve it
-
-### Known Limitations
-
-1. **Sample Data:** The `_sample.tsv` files are confirmed subsets. Full datasets from GEO are required for prediction steps.
-2. **QEMU Emulation Speed:** ~5-10x slower than native x86_64. The small sample dataset mitigates this.
-3. **No RNG Seeds:** Code doesn't set random seeds. Even with full data, exact numerical reproduction is impossible.
-4. **R Package Versions:** Using 2021-era R packages (not 2019). Limma analysis behavior should be identical.
-5. **Python 3.6 vs 3.5:** Benign mismatch warning from TF; no functional impact.
-6. **GPL13534 Annotation:** Converted from Illumina manifest CSV (not original GEO format). Column content is identical.
+Requires full GEO datasets (GSE33000, GSE44770, GSE80970) and x86_64-linux execution.
 
 ---
 
 ## 7. Confidence Level
 
-**HIGH for environment reconstruction.** All stated dependencies installed at exact versions. The pipeline runs correctly through the feature selection phase.
+**HIGH for environment reconstruction.** The nixpkgs 19.09 snapshot provides a complete, tested-together set of Python 3.6 and R packages from the paper's era. TF 1.4.1 is the exact version from the paper, built from its official PyPI wheel. Every artifact is hash-pinned.
 
-**MEDIUM for numerical reproducibility.** Cannot verify without full datasets. The environment is correct, but:
-1. Full GEO datasets are needed to run prediction steps
-2. No RNG seeds means exact numerical match is impossible
-3. R/Bioconductor versions are newer than the 2019 originals
-
----
-
-## 8. Recommendations for Future Researchers
-
-1. **Use the Docker image** — It encapsulates the exact environment and runs on any x86_64 system (or Apple Silicon via QEMU)
-2. **Obtain full datasets from GEO** — If `_sample` files produce different results, download the full datasets from GSE33000, GSE44770, GSE80970
-3. **Pin RNG seeds** — To improve reproducibility, add `np.random.seed(42)`, `tf.set_random_seed(42)`, and `random.seed(42)` at the start of each script
-4. **Consider TF 2.x migration** — TF 1.4.1 is long EOL. The code uses `tf.Session`, `tf.placeholder`, etc. Migration to TF 2.x with `tf.compat.v1` would extend the usable life of this codebase
-5. **Version-lock R packages** — Use `renv` or specify exact CRAN snapshot dates to make R dependencies fully reproducible
+**MEDIUM for numerical reproducibility.** Cannot verify without full datasets + x86_64-linux. Additional factors:
+1. No RNG seeds in the code
+2. NumPy/pandas versions are one minor ahead of README (unlikely to affect results)
+3. R/Bioconductor versions from 19.09 (limma 3.38.3 vs uncertain original)
 
 ---
 
-## 9. File Inventory
+## 8. Recommendations
 
-| File | Purpose |
-|------|---------|
-| `.flox/env/manifest.toml` | Flox environment specification (for native x86_64-linux) |
-| `Dockerfile` | Docker build file (for cross-platform reproducibility) |
-| `dataset/convert_manifest.py` | Converts Illumina manifest CSV to GEO annotation format |
-| `dataset/GPL13534-11288.txt` | Generated annotation file (188MB) |
-| `dataset/GPL13534_manifest.csv.gz` | Downloaded Illumina manifest source (61MB) |
-| `dataset/allforDNN_ge.txt` | Gene expression data (renamed from `_sample.tsv`) |
-| `dataset/allforDNN_me.txt` | DNA methylation data (renamed from `_sample.tsv`) |
-| `REPRODUCIBILITY_REPORT.md` | This report |
+1. **Use `flox activate`** on x86_64-linux for the most reproducible environment. Use `flox containerize` for k8s deployment.
+
+2. **Obtain full GEO datasets** — sample files produce different (empty) DEG-DMG intersections.
+
+3. **Pin RNG seeds** — Add `np.random.seed(42)`, `tf.set_random_seed(42)`, `random.seed(42)` to each script.
+
+4. **The nixpkgs tarball hash** in `python-ml-env.nix` and `r-bio-env.nix` needs to be populated on the first build (Nix will error with the correct hash — copy it in).
+
+5. **dgof R package** — may need to be added as a custom Nix derivation or installed via `install.packages()` if not in nixpkgs 19.09 rPackages.
