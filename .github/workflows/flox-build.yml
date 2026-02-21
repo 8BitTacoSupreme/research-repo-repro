@@ -9,6 +9,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest  # x86_64-linux
+    defaults:
+      run:
+        working-directory: DNN_for_ADprediction
     steps:
       - uses: actions/checkout@v4
 
