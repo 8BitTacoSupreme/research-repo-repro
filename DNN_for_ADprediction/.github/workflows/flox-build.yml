@@ -1,0 +1,48 @@
+name: Flox Build & Push
+
+on:
+  push:
+    branches: [flox-only, main]
+  pull_request:
+    branches: [flox-only, main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # x86_64-linux
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Flox
+        uses: flox/install-flox-action@v2
+
+      - name: Build environments
+        run: flox build
+
+      - name: Verify Python environment
+        run: |
+          ./result-python-ml-env/bin/python3 -c "
+          import sys
+          print(f'Python: {sys.version}')
+          import tensorflow as tf
+          print(f'TensorFlow: {tf.__version__}')
+          import numpy as np
+          print(f'NumPy: {np.__version__}')
+          import pandas as pd
+          print(f'Pandas: {pd.__version__}')
+          import sklearn
+          print(f'scikit-learn: {sklearn.__version__}')
+          "
+
+      - name: Verify R environment
+        run: |
+          ./result-r-bio-env/bin/R --slave -e "
+          cat('R version:', R.version.string, '\n')
+          library(limma)
+          cat('limma:', packageVersion('limma'), '\n')
+          "
+
+      - name: Push to FloxHub
+        if: github.event_name == 'push' && github.ref == 'refs/heads/flox-only'
+        env:
+          FLOX_FLOXHUB_TOKEN: ${{ secrets.FLOX_FLOXHUB_TOKEN }}
+        run: flox push --force

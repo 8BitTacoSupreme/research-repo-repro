@@ -27,8 +27,7 @@
     },
     "options": {
       "systems": [
-        "x86_64-linux",
-        "aarch64-darwin"
+        "x86_64-linux"
       ]
     },
     "containerize": {
@@ -38,42 +37,6 @@
     }
   },
   "packages": [
-    {
-      "attr_path": "bash",
-      "broken": false,
-      "derivation": "/nix/store/5j3b6dr32ax6jjd63y16d9f4difhkfr3-bash-4.4-p23.drv",
-      "description": "GNU Bourne-Again Shell, the de facto standard shell on Linux",
-      "install_id": "bash",
-      "license": "GPL-3.0-or-later",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
-      "name": "bash-4.4-p23",
-      "pname": "bash",
-      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
-      "rev_count": 309388,
-      "rev_date": "2021-08-17T18:52:19Z",
-      "scrape_date": "2024-08-15T20:55:30Z",
-      "stabilities": [
-        "stable",
-        "staging",
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "4.4-p23",
-      "outputs_to_install": [
-        "man",
-        "out"
-      ],
-      "outputs": {
-        "dev": "/nix/store/sbh1wmv6ypq2gsqs3f1wlifb6jhc5qc2-bash-4.4-p23-dev",
-        "doc": "/nix/store/z1pkh67mfhmnhk7h2n0fznwvp1w0w7sa-bash-4.4-p23-doc",
-        "info": "/nix/store/pg39vxh372b6q618p4fkg4zvkjpxliqd-bash-4.4-p23-info",
-        "man": "/nix/store/nkd3yc672009md3537hmglsy6zli7ffr-bash-4.4-p23-man",
-        "out": "/nix/store/9hcd04vppg0b3r0chmd6w13lbrnr7m6w-bash-4.4-p23"
-      },
-      "system": "aarch64-darwin",
-      "group": "toplevel",
-      "priority": 5
-    },
     {
       "attr_path": "bash",
       "broken": false,
@@ -113,38 +76,6 @@
     {
       "attr_path": "coreutils",
       "broken": false,
-      "derivation": "/nix/store/p6071ipgyxzr016cfwc4bhqxcdvi4a1q-coreutils-8.32.drv",
-      "description": "The basic file, shell and text manipulation utilities of the GNU operating system",
-      "install_id": "coreutils",
-      "license": "GPL-3.0-or-later",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
-      "name": "coreutils-8.32",
-      "pname": "coreutils",
-      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
-      "rev_count": 309388,
-      "rev_date": "2021-08-17T18:52:19Z",
-      "scrape_date": "2024-08-15T20:55:30Z",
-      "stabilities": [
-        "stable",
-        "staging",
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "8.32",
-      "outputs_to_install": [
-        "out"
-      ],
-      "outputs": {
-        "info": "/nix/store/7pca6fzj16j77wfnkqj4rw2qkwk44df0-coreutils-8.32-info",
-        "out": "/nix/store/6c5v0bn1393m27z1iir6r0wbh8zhmwb6-coreutils-8.32"
-      },
-      "system": "aarch64-darwin",
-      "group": "toplevel",
-      "priority": 5
-    },
-    {
-      "attr_path": "coreutils",
-      "broken": false,
       "derivation": "/nix/store/xwvwhf2530hc7rbpxiw8arp9kj6djncx-coreutils-8.32.drv",
       "description": "The basic file, shell and text manipulation utilities of the GNU operating system",
       "install_id": "coreutils",
@@ -171,42 +102,6 @@
         "out": "/nix/store/jj6z78skpdcya84iqbn9cf59sxjy5msv-coreutils-8.32"
       },
       "system": "x86_64-linux",
-      "group": "toplevel",
-      "priority": 5
-    },
-    {
-      "attr_path": "curl",
-      "broken": false,
-      "derivation": "/nix/store/i5k3hsci2q0xr51lp3gh7z8kbfhsdd6h-curl-7.76.1.drv",
-      "description": "A command line tool for transferring files with URL syntax",
-      "install_id": "curl",
-      "license": "curl",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
-      "name": "curl-7.76.1",
-      "pname": "curl",
-      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
-      "rev_count": 309388,
-      "rev_date": "2021-08-17T18:52:19Z",
-      "scrape_date": "2024-08-15T20:55:30Z",
-      "stabilities": [
-        "stable",
-        "staging",
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "7.76.1",
-      "outputs_to_install": [
-        "bin",
-        "man"
-      ],
-      "outputs": {
-        "bin": "/nix/store/gf22zpzhc214r0nyy4sc4y8mqk4djfw0-curl-7.76.1-bin",
-        "dev": "/nix/store/829iy9qharl57p1scgbvsxhzvn0dafzl-curl-7.76.1-dev",
-        "devdoc": "/nix/store/xqfqbwjla8xbxzvmy06v2b3358hz8jyn-curl-7.76.1-devdoc",
-        "man": "/nix/store/8z77ghz3a2ryjflzyyp74cq94crslp9h-curl-7.76.1-man",
-        "out": "/nix/store/x3nxihzqiqng95vnhsmh2xkq1h7fqyrv-curl-7.76.1"
-      },
-      "system": "aarch64-darwin",
       "group": "toplevel",
       "priority": 5
     },
@@ -250,38 +145,6 @@
     {
       "attr_path": "gnused",
       "broken": false,
-      "derivation": "/nix/store/f5808lakf09rp3cpw8fyc8q2f4w9g2d8-gnused-4.8.drv",
-      "description": "GNU sed, a batch stream editor",
-      "install_id": "gnused",
-      "license": "GPL-3.0-or-later",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
-      "name": "gnused-4.8",
-      "pname": "gnused",
-      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
-      "rev_count": 309388,
-      "rev_date": "2021-08-17T18:52:19Z",
-      "scrape_date": "2024-08-15T20:55:30Z",
-      "stabilities": [
-        "stable",
-        "staging",
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "4.8",
-      "outputs_to_install": [
-        "out"
-      ],
-      "outputs": {
-        "info": "/nix/store/1cwd5fglpmcggdvykqifnwjqnmxfmycw-gnused-4.8-info",
-        "out": "/nix/store/lpdmij7vig7zspz0fsdbibg99gfrgw4r-gnused-4.8"
-      },
-      "system": "aarch64-darwin",
-      "group": "toplevel",
-      "priority": 5
-    },
-    {
-      "attr_path": "gnused",
-      "broken": false,
       "derivation": "/nix/store/4svsf7mn5fkfwf822vgd3dlpx2wsp59i-gnused-4.8.drv",
       "description": "GNU sed, a batch stream editor",
       "install_id": "gnused",
@@ -308,40 +171,6 @@
         "out": "/nix/store/pp6q8mh5ilgsf67cciggkqcrrw8z2hip-gnused-4.8"
       },
       "system": "x86_64-linux",
-      "group": "toplevel",
-      "priority": 5
-    },
-    {
-      "attr_path": "gzip",
-      "broken": false,
-      "derivation": "/nix/store/r3n8fhyv42385szn54p5pzh7paihn3jp-gzip-1.10.drv",
-      "description": "GNU zip compression program",
-      "install_id": "gzip",
-      "license": "GPL-3.0-or-later",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
-      "name": "gzip-1.10",
-      "pname": "gzip",
-      "rev": "2435ea48c3b295d9cd490535730bb13ab8cfd8a5",
-      "rev_count": 309388,
-      "rev_date": "2021-08-17T18:52:19Z",
-      "scrape_date": "2024-08-15T20:55:30Z",
-      "stabilities": [
-        "stable",
-        "staging",
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "1.10",
-      "outputs_to_install": [
-        "man",
-        "out"
-      ],
-      "outputs": {
-        "info": "/nix/store/l4hrqip6naap2ypidk57xllc7y2rb15x-gzip-1.10-info",
-        "man": "/nix/store/60rc4h89w8b4sbl1dy7cr85mdq8dspcm-gzip-1.10-man",
-        "out": "/nix/store/ssssi7csxmh0crv44y38mp4ikf58m1h0-gzip-1.10"
-      },
-      "system": "aarch64-darwin",
       "group": "toplevel",
       "priority": 5
     },

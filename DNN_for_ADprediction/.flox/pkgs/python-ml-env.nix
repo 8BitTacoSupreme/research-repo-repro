@@ -32,6 +32,14 @@ let
   python = nixpkgs-1909.python36;
   pp = python.pkgs;
 
+  # pandas from nixpkgs-19.09 has a test dep chain (moto → boto → httpretty)
+  # where httpretty 0.9.6 has a timing-sensitive test that fails under QEMU.
+  # Override pandas to skip tests — the pandas package itself is fine.
+  pandasNoCheck = pp.pandas.overrideAttrs (old: {
+    doCheck = false;
+    doInstallCheck = false;
+  });
+
   # === TensorBoard 0.4.0 (required by TF 1.4.1: >=0.4.0,<0.5.0) ===
   tensorboard040 = pp.buildPythonPackage rec {
     pname = "tensorflow-tensorboard";
@@ -41,19 +49,29 @@ let
       url = "https://files.pythonhosted.org/packages/e9/9f/5845c18f9df5e7ea638ecf3a272238f0e7671e454faa396b5188c6e6fc0a/tensorflow_tensorboard-0.4.0-py3-none-any.whl";
       sha256 = "6684571c711e07b3aae25dd91cb4b106738d71acfce385b9d359ab14374ac518";
     };
-    propagatedBuildInputs = with pp; [ werkzeug html5lib bleach markdown numpy six ];
+    propagatedBuildInputs = with pp; [ werkzeug html5lib bleach markdown numpy six protobuf ];
+    pipInstallFlags = [ "--no-deps" ];
     doCheck = false;
   };
 
   # === TensorFlow 1.4.1 CPU from PyPI wheel ===
+  # The manylinux1 wheel tag isn't recognized in the Nix sandbox (no /lib/x86_64-linux-gnu).
+  # Rename the wheel to use linux_x86_64 so pip accepts it, then autoPatchelfHook
+  # fixes up the shared library RPATHs.
+  tf-wheel-src = fetchurl {
+    url = "https://files.pythonhosted.org/packages/8c/b3/dba1a3e681a56d5ad63d3a1aa02b52294bdb3c6373245a67c1492a90cb62/tensorflow-1.4.1-cp36-cp36m-manylinux1_x86_64.whl";
+    sha256 = "233d66bfad2287c61434384ec315bbf37b2f551beda2e0d37a8c24a0f2ed3896";
+  };
   tensorflow141 = pp.buildPythonPackage rec {
     pname = "tensorflow";
     version = "1.4.1";
     format = "wheel";
-    src = fetchurl {
-      url = "https://files.pythonhosted.org/packages/8c/b3/dba1a3e681a56d5ad63d3a1aa02b52294bdb3c6373245a67c1492a90cb62/tensorflow-1.4.1-cp36-cp36m-manylinux1_x86_64.whl";
-      sha256 = "233d66bfad2287c61434384ec315bbf37b2f551beda2e0d37a8c24a0f2ed3896";
-    };
+    src = tf-wheel-src;
+    # Override wheelUnpackPhase to rename manylinux1 → linux_x86_64
+    unpackPhase = ''
+      mkdir -p dist
+      cp ${tf-wheel-src} dist/${pname}-${version}-cp36-cp36m-linux_x86_64.whl
+    '';
     propagatedBuildInputs = with pp; [
       numpy
       protobuf
@@ -66,6 +84,7 @@ let
       nixpkgs-1909.stdenv.cc.cc.lib  # libstdc++
       nixpkgs-1909.zlib
     ];
+    pipInstallFlags = [ "--no-deps" ];
     doCheck = false;
   };
 
@@ -84,7 +103,7 @@ let
 in python.withPackages (ps: [
   # Core ML stack (from nixpkgs 19.09 binary cache)
   ps.numpy       # 1.17.2
-  ps.pandas      # 0.25.1
+  pandasNoCheck  # 0.25.1 (tests disabled — httpretty timing failures under QEMU)
   ps.scikitlearn # 0.21.2
   ps.scipy       # 1.3.1
   ps.matplotlib  # 3.1.1
