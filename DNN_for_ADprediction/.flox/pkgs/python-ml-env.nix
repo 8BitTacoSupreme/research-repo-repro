@@ -52,6 +52,10 @@ let
     propagatedBuildInputs = with pp; [ werkzeug html5lib bleach markdown numpy six protobuf ];
     pipInstallFlags = [ "--no-deps" ];
     doCheck = false;
+    # TF 1.4.1 wheel also ships a tensorboard binary — remove ours to avoid collision
+    postInstall = ''
+      rm -rf $out/bin
+    '';
   };
 
   # === TensorFlow 1.4.1 CPU from PyPI wheel ===
