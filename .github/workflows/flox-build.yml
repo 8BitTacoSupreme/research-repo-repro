@@ -41,7 +41,7 @@ jobs:
           ./result-r-bio-env/bin/R --slave -e "
           cat('R version:', R.version.string, '\n')
           library(limma)
-          cat('limma:', packageVersion('limma'), '\n')
+          cat('limma:', as.character(packageVersion('limma')), '\n')
           "
 
       - name: Push to FloxHub
