@@ -48,4 +48,6 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/flox-only'
         env:
           FLOX_FLOXHUB_TOKEN: ${{ secrets.FLOX_FLOXHUB_TOKEN }}
-        run: flox push --force
+        run: |
+          flox config --set floxhub_token "$FLOX_FLOXHUB_TOKEN"
+          flox push --force
