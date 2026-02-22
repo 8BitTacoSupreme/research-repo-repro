@@ -11,13 +11,17 @@ This project reconstructs the exact software environment from the 2019-era paper
 
 The environment imports a **historical nixpkgs snapshot** (nixos-19.09, commit `75f4ba05c63`) that provides Python 3.6.9, R 3.6.1, and the complete 2019-era scientific computing stack. TensorFlow 1.4.1 is built from its hash-pinned PyPI wheel since it was never packaged in nixpkgs.
 
+CI builds run on every push via GitHub Actions on native x86_64-linux runners.
+
 See [`DNN_for_ADprediction/REPRODUCIBILITY_REPORT.md`](DNN_for_ADprediction/REPRODUCIBILITY_REPORT.md) for the full forensic analysis, dependency table, and validation results.
 
 ## Repository Structure
 
 ```
 research-repo-repro/
+├── README.md
 ├── CLAUDE.md                              # Agent instructions
+├── .github/workflows/flox-build.yml       # CI: build + verify + push to FloxHub
 ├── park-et-al-2020.md                     # Task brief
 ├── DNN_for_ADprediction/                  # Companion repo + reproducibility infra
 │   ├── .flox/
@@ -41,30 +45,76 @@ research-repo-repro/
 
 ## Prerequisites
 
-- **Flox** ([install](https://flox.dev/get-flox))
-- **x86_64-linux** system (TF 1.4.1 has no arm64 wheel)
+- **[Flox](https://flox.dev/get-flox)** installed
+- **x86_64-linux** system (TF 1.4.1 wheel is x86_64 only — see [macOS instructions](#on-macos-apple-silicon) below)
 - ~5 GB disk for Nix store artifacts
 
 ## Quick Start
 
-### 1. Build the environment (one-time)
+### On x86_64-linux (native)
+
+```bash
+git clone https://github.com/8BitTacoSupreme/research-repo-repro.git
+cd research-repo-repro/DNN_for_ADprediction
+
+# Build both environments (~5 min with binary cache)
+flox build
+
+# Verify
+./result-python-ml-env/bin/python3 -c "import tensorflow as tf; print(tf.__version__)"
+# → 1.4.1
+
+./result-r-bio-env/bin/R --slave -e "library(limma); cat('limma loaded\n')"
+# → limma loaded
+
+# Run the pipeline
+./result-python-ml-env/bin/python3 code/01\ data\ preprocessing/Split_Inputdata.py
+```
+
+`flox build` creates two symlinks:
+- `result-python-ml-env` — Python 3.6.9 with TF 1.4.1, NumPy, pandas, scikit-learn, scipy, matplotlib, bayesian-optimization
+- `result-r-bio-env` — R 3.6.1 with limma, ggplot2, data.table, openxlsx, pracma
+
+### On macOS (Apple Silicon)
+
+You cannot build directly — TF 1.4.1 has no ARM wheel. Options:
+
+1. **Push to GitHub** — the CI workflow builds on native x86_64 ubuntu-latest automatically
+2. **Lima VM** — run an x86_64 Linux VM locally:
+   ```bash
+   brew install lima
+   limactl create --name=nix-builder --vm-type=vz --rosetta template://default
+   limactl start nix-builder
+   limactl shell nix-builder    # then install Flox inside and build
+   ```
+3. **Any x86_64 Linux box** — Linode, EC2, lab server, etc.
+
+### Using `flox activate` (interactive shell)
 
 ```bash
 cd DNN_for_ADprediction
-flox build
-```
-
-This builds TF 1.4.1 from its PyPI wheel, TensorBoard 0.4.0, and bayesian-optimization 1.0.1 from source. All other packages (numpy, pandas, scipy, scikit-learn, matplotlib, R, limma, etc.) are fetched from the nixos-19.09 binary cache. Takes ~5 minutes on first run. Creates `result-python-ml-env` and `result-r-bio-env` symlinks.
-
-### 2. Activate the environment
-
-```bash
 flox activate
+# Now python3, R, and all packages are on PATH
+python3 -c "import tensorflow; print(tensorflow.__version__)"
 ```
 
-The on-activate hook wires the build results into PATH. Subsequent activations are instant.
+## CI/CD
 
-### 2. Prepare data files
+GitHub Actions builds both environments on every push to `flox-only` or `main`:
+
+```
+.github/workflows/flox-build.yml
+```
+
+The workflow:
+1. Checks out the repo
+2. Installs Flox via `flox/install-flox-action@v2`
+3. Runs `flox build` (builds both Python and R environments)
+4. Verifies Python packages: TF 1.4.1, NumPy 1.17.2, pandas 0.25.1, scikit-learn 0.21.2
+5. Verifies R packages: R 3.6.1, limma 3.38.3
+6. Pushes to FloxHub (requires `FLOX_FLOXHUB_TOKEN` repo secret)
+
+## Preparing Data
 
 ```bash
 # Copy sample data to expected filenames
@@ -85,7 +135,7 @@ for k in 1 2 3 4 5; do
 done
 ```
 
-### 3. Run the pipeline
+## Running the Pipeline
 
 ```bash
 # Step 1: Data preprocessing
@@ -100,83 +150,7 @@ cd "code/02 feature selection" && python3 "02 Annotate_DMP.py" && cd ../..
 # Steps 4-5 require full GEO datasets (see below)
 ```
 
-## Deploying to Kubernetes (no Docker)
-
-Flox exports native OCI container images directly from the Nix store:
-
-```bash
-# Export OCI image
-flox containerize -f park2020-ad-dnn.tar
-
-# Load into a container runtime
-docker load < park2020-ad-dnn.tar
-# OR
-podman load < park2020-ad-dnn.tar
-
-# Push to registry and deploy to k8s
-docker tag park2020-ad-dnn:latest registry.example.com/park2020-ad-dnn:latest
-docker push registry.example.com/park2020-ad-dnn:latest
-
-kubectl create deployment park2020 --image=registry.example.com/park2020-ad-dnn:latest
-```
-
-The container image contains only the Nix closure — no base OS layer, no package manager. Minimal attack surface, fully reproducible.
-
-## Testing
-
-### Test 1: Verify Python environment
-
-```bash
-python3 -c "
-import tensorflow as tf; print('TensorFlow:', tf.__version__)
-import numpy as np; print('NumPy:', np.__version__)
-import pandas as pd; print('pandas:', pd.__version__)
-import sklearn; print('scikit-learn:', sklearn.__version__)
-from bayes_opt import BayesianOptimization; print('bayesian-optimization: OK')
-import matplotlib; print('matplotlib:', matplotlib.__version__)
-import scipy; print('scipy:', scipy.__version__)
-"
-```
-
-**Expected output:**
-```
-TensorFlow: 1.4.1
-NumPy: 1.17.2
-pandas: 0.25.1
-scikit-learn: 0.21.2
-bayesian-optimization: OK
-matplotlib: 3.1.1
-scipy: 1.3.1
-```
-
-> Note: NumPy/pandas/scipy/matplotlib versions differ from the pip-based branch because they come from nixpkgs 19.09 (same era, tested together). TF 1.4.1 is the exact version from the paper.
-
-### Test 2: Verify R environment
-
-```bash
-Rscript -e "
-library(limma); cat('limma:', as.character(packageVersion('limma')), '\n')
-library(openxlsx); cat('openxlsx:', as.character(packageVersion('openxlsx')), '\n')
-library(data.table); cat('data.table:', as.character(packageVersion('data.table')), '\n')
-library(ggplot2); cat('ggplot2:', as.character(packageVersion('ggplot2')), '\n')
-library(pracma); cat('pracma:', as.character(packageVersion('pracma')), '\n')
-"
-```
-
-### Test 3: Pipeline smoke test
-
-Steps 1-3 should PASS with sample data. Steps 4-5 will FAIL with `ValueError: 0 features` — this is expected because the sample `.tsv` files have too few probes for a meaningful DEG-DMG intersection. Full GEO datasets (GSE33000, GSE44770, GSE80970) are required for the prediction steps.
-
-## Architecture: Why Nix Instead of Docker
-
-| | Docker (main branch) | Flox/Nix (this branch) |
-|---|---|---|
-| **Reproducibility** | Mutable pip installs cached in layers | Every artifact hash-pinned in Nix store |
-| **Binary cache** | Docker Hub layers | cache.nixos.org (content-addressed) |
-| **Dependency graph** | Opaque (pip resolves at build time) | Fully visible in Nix expressions |
-| **Container export** | Dockerfile builds OCI image | `flox containerize` exports OCI image |
-| **Activation time** | `docker run` (seconds) | `flox activate` (instant after first build) |
-| **Auditability** | Read Dockerfile + hope pip resolves same | Read .nix files — every hash is the version |
+Steps 1-3 work with sample data. Steps 4-5 need full GEO datasets for meaningful results.
 
 ## What's Pinned
 
@@ -184,7 +158,7 @@ Steps 1-3 should PASS with sample data. Steps 4-5 will FAIL with `ValueError: 0 
 nixpkgs snapshot: nixos-19.09 (commit 75f4ba05c63be3f147bcc2f7bd4ba1f029cedcb1)
 ├── python36          3.6.9         (from binary cache)
 ├── numpy             1.17.2        (from binary cache)
-├── pandas            0.25.1        (from binary cache)
+├── pandas            0.25.1        (from binary cache, tests disabled)
 ├── scikit-learn      0.21.2        (from binary cache)
 ├── scipy             1.3.1         (from binary cache)
 ├── matplotlib        3.1.1         (from binary cache)
@@ -200,11 +174,28 @@ nixpkgs snapshot: nixos-19.09 (commit 75f4ba05c63be3f147bcc2f7bd4ba1f029cedcb1)
     └── bayesian-opt  1.0.1         (PyPI sdist sha256:b7ba390d...)
 ```
 
-## Code Fixes Applied
+## Build Fixes
 
-1. **R script Windows paths** — `code/02 feature selection/01 investigate_DEG_DMP.R` had hardcoded `D:\Development\...` paths. Replaced with cross-platform path detection.
+The Nix expressions required several fixes to build correctly in a sandboxed environment:
 
-2. **Illumina annotation file** — `GPL13534-11288.txt` is no longer at its original GEO URL. Created `dataset/convert_manifest.py` to generate it from the Illumina supplementary CSV.
+1. **pandas test skip** — pandas' test dependency chain (moto -> boto -> httpretty) has timing-sensitive tests that fail in sandboxed/emulated builds. Disabled via `overrideAttrs`.
+
+2. **pip `--no-deps`** — pip inside the Nix sandbox can't see Nix-provided packages, so dependency checks fail for TF and TensorBoard wheels. Fixed with `pipInstallFlags = ["--no-deps"]`.
+
+3. **manylinux1 wheel rename** — the TF 1.4.1 wheel uses the `manylinux1_x86_64` platform tag, which pip rejects in the Nix sandbox (no `/lib/x86_64-linux-gnu`). Fixed by renaming to `linux_x86_64` in a custom `unpackPhase`, then using `autoPatchelfHook` to fix shared library RPATHs.
+
+4. **TensorBoard binary collision** — both TensorBoard 0.4.0 and TF 1.4.1 install a `tensorboard` binary. Resolved by removing TensorBoard's `bin/` output.
+
+## Architecture: Why Nix Instead of Docker
+
+| | Docker (main branch) | Flox/Nix (this branch) |
+|---|---|---|
+| **Reproducibility** | Mutable pip installs cached in layers | Every artifact hash-pinned in Nix store |
+| **Binary cache** | Docker Hub layers | cache.nixos.org (content-addressed) |
+| **Dependency graph** | Opaque (pip resolves at build time) | Fully visible in Nix expressions |
+| **Container export** | Dockerfile builds OCI image | `flox containerize` exports OCI image |
+| **Activation time** | `docker run` (seconds) | `flox activate` (instant after first build) |
+| **Auditability** | Read Dockerfile + hope pip resolves same | Read .nix files — every hash is the version |
 
 ## Full Datasets (for numerical reproduction)
 
@@ -215,6 +206,12 @@ To reproduce the paper's reported results (DNN accuracy 0.823, AUROC 0.797), dow
 - [GSE80970](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE80970) — DNA methylation (142 samples)
 
 > The code does not set random seeds, so exact numerical reproduction is not possible even with correct data. Results within 1-2% of paper values indicate successful environment reconstruction.
+
+## Code Fixes Applied
+
+1. **R script Windows paths** — `code/02 feature selection/01 investigate_DEG_DMP.R` had hardcoded `D:\Development\...` paths. Replaced with cross-platform path detection.
+
+2. **Illumina annotation file** — `GPL13534-11288.txt` is no longer at its original GEO URL. Created `dataset/convert_manifest.py` to generate it from the Illumina supplementary CSV.
 
 ## License
 
